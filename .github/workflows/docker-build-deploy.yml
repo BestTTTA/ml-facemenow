@@ -52,6 +52,7 @@ jobs:
           STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
           BUCKKET_NAME: ${{ secrets.BUCKKET_NAME }}
           MINIO_SSL: ${{ secrets.MINIO_SSL }}
+          MINIO_PUBLIC_URL: ${{ secrets.MINIO_PUBLIC_URL }}
         run: |
           export SSHPASS=$DEPLOY_PASSWORD
           sshpass -e ssh -o StrictHostKeyChecking=no $DEPLOY_USER@$DEPLOY_SERVER "
@@ -65,6 +66,9 @@ jobs:
               --env MINIO_ENDPOINT=${MINIO_ENDPOINT} \
               --env MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY} \
               --env MINIO_SECRET_KEY=${MINIO_SECRET_KEY} \
+              --env MINIO_SSL=${MINIO_SSL} \
+              --env MINIO_PUBLIC_URL=${MINIO_PUBLIC_URL} \
+              --env BUCKKET_NAME=${BUCKKET_NAME} \
               --env STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY} \
               --env STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET} \
               --name be-facemenow \"$DOCKER_IMAGE\"

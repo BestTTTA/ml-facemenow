@@ -40,6 +40,7 @@ MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
 MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY")
 BUCKET_NAME = os.getenv("BUCKKET_NAME")
 MINIO_SSL = os.getenv("MINIO_SSL", "false").lower() == "true"
+MINIO_PUBLIC_URL = os.getenv("MINIO_PUBLIC_URL", "https://minio.facemenow.co")
 
 # Stripe configuration
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
@@ -212,7 +213,7 @@ def upload_to_minio(file_path: Path, object_name: str) -> str:
         client.make_bucket(bucket)
 
     client.fput_object(bucket, object_name, str(file_path))
-    return f"http://{MINIO_ENDPOINT}/{bucket}/{object_name}"
+    return f"{MINIO_PUBLIC_URL}/{bucket}/{object_name}"
 
 async def add_image_to_db_async(image_path: str, img_url: str, cuser_id: str, event_id: str) -> Dict:
     loop = asyncio.get_event_loop()
