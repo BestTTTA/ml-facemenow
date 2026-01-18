@@ -38,6 +38,8 @@ app.add_middleware(
 MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT")
 MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
 MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY")
+BUCKET_NAME = os.getenv("BUCKKET_NAME")
+MINIO_SSL = os.getenv("MINIO_SSL", "false").lower() == "true"
 
 # Stripe configuration
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
@@ -56,7 +58,9 @@ face_finder = FaceFindr(db_path=db_url)
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
-executor = ThreadPoolExecutor(max_workers=4)
+# Separate executors for search and upload to prevent blocking
+search_executor = ThreadPoolExecutor(max_workers=4)  # Priority for search - fast response
+upload_executor = ThreadPoolExecutor(max_workers=2)  # Background upload processing
 
 # -------------------- PYDANTIC MODELS --------------------
 
@@ -138,7 +142,7 @@ def execute_query(query: str, params: tuple = None, fetch: bool = False):
 async def process_image_for_search_async(img_url: str, tolerance: float = 0.4, max_results: int = 30) -> Dict:
     loop = asyncio.get_event_loop()
     results = await loop.run_in_executor(
-        executor,
+        search_executor,
         face_finder.search_image_from_url_formatted,
         img_url,
         tolerance,
@@ -148,7 +152,7 @@ async def process_image_for_search_async(img_url: str, tolerance: float = 0.4, m
 async def process_image_for_search_local_async(image_path: str, tolerance: float = 0.4, max_results: int = 30, event_id: str = None) -> Dict:
     loop = asyncio.get_event_loop()
     results = await loop.run_in_executor(
-        executor,
+        search_executor,
         face_finder.search_image_from_local_file_formatted,
         image_path,
         tolerance,
@@ -201,21 +205,21 @@ def upload_to_minio(file_path: Path, object_name: str) -> str:
         MINIO_ENDPOINT,
         access_key=MINIO_ACCESS_KEY,
         secret_key=MINIO_SECRET_KEY,
-        secure=True
+        secure=MINIO_SSL
     )
-    bucket = "images"
+    bucket = BUCKET_NAME
     if not client.bucket_exists(bucket):
         client.make_bucket(bucket)
 
     client.fput_object(bucket, object_name, str(file_path))
-    return f"https://{MINIO_ENDPOINT}/{bucket}/{object_name}"
+    return f"http://{MINIO_ENDPOINT}/{bucket}/{object_name}"
 
 async def add_image_to_db_async(image_path: str, img_url: str, cuser_id: str, event_id: str) -> Dict:
     loop = asyncio.get_event_loop()
-    
+
     result = await loop.run_in_executor(
-        executor,
-        face_finder.process_image_from_url, 
+        upload_executor,
+        face_finder.process_image_from_url,
         img_url,
         cuser_id,
         event_id

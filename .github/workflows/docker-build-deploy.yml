@@ -6,10 +6,10 @@ on:
       - main
 
 env:
-  DOCKER_IMAGE: bestbest/be-facemenow:1.0.0
-  DEPLOY_SERVER: 119.59.99.92
-  DEPLOY_USER: root
-  DOCKER_USERNAME: bestbest
+  DOCKER_IMAGE: ${{ secrets.DOCKER_IMAGE }}
+  DEPLOY_SERVER: ${{ secrets.DEPLOY_SERVER }}
+  DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
 
 jobs:
   build_and_push:
@@ -47,6 +47,8 @@ jobs:
           MINIO_SECRET_KEY: ${{ secrets.MINIO_SECRET_KEY }}
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          BUCKKET_NAME: ${{ secrets.BUCKKET_NAME }}
+          MINIO_SSL: ${{ secrets.MINIO_SSL }}
         run: |
           export SSHPASS=$DEPLOY_PASSWORD
           sshpass -e ssh -o StrictHostKeyChecking=no $DEPLOY_USER@$DEPLOY_SERVER "
